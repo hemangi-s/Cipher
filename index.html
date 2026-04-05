@@ -3,145 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MCQ Scanner AI</title>
+<title>MCQ Scanner — Local AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap');
-
   :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --border: #1e1e2e;
-    --accent: #00ff88;
-    --accent2: #ff6b35;
-    --text: #e8e8f0;
-    --muted: #5a5a7a;
-    --panel: #0d0d15;
+    --bg:#0a0a0f; --surface:#12121a; --border:#1e1e2e;
+    --accent:#00ff88; --accent2:#ff6b35; --text:#e8e8f0;
+    --muted:#5a5a7a; --panel:#0d0d15; --blue:#4af0ff;
   }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:16px;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);}
+  .logo span{color:var(--text);}
+  .badge{background:var(--border);border:1px solid var(--muted);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--muted);}
+  .badge strong{color:var(--accent);}
 
-  body {
-    font-family: 'Space Mono', monospace;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100dvh;
-    overflow-x: hidden;
-  }
+  /* Setup card */
+  .setup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+  .setup-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+  .setup-header:hover{background:rgba(255,255,255,0.02);}
+  .section-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .chevron{font-size:12px;color:var(--muted);transition:transform 0.2s;}
+  .chevron.open{transform:rotate(180deg);}
+  .setup-body{padding:16px;display:none;}
+  .setup-body.open{display:block;}
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+  .step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;}
+  .step:last-child{margin-bottom:0;}
+  .step-num{min-width:26px;height:26px;background:var(--accent);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+  .step-body{flex:1;font-size:11px;line-height:1.7;color:var(--muted);}
+  .step-body strong{color:var(--text);display:block;margin-bottom:3px;}
+  .code-block{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--accent);margin-top:6px;word-break:break-all;position:relative;}
+  .copy-btn{position:absolute;top:4px;right:6px;background:var(--border);border:none;border-radius:4px;color:var(--muted);font-size:9px;padding:2px 6px;cursor:pointer;font-family:'Space Mono',monospace;}
+  .copy-btn:hover{color:var(--accent);}
+  .highlight{color:var(--accent2);}
+  .note{background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);border-radius:8px;padding:10px 12px;font-size:10px;color:var(--accent2);line-height:1.7;margin-top:10px;}
+  .note-blue{background:rgba(74,240,255,0.06);border:1px solid rgba(74,240,255,0.2);border-radius:8px;padding:10px 12px;font-size:10px;color:var(--blue);line-height:1.7;margin-top:8px;}
 
-  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 16px; }
+  /* Connection section */
+  .conn-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+  .conn-row{display:flex;gap:8px;align-items:center;}
+  input[type="text"]{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color 0.2s;}
+  input:focus{border-color:var(--accent);}
+  .test-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .conn-status{font-size:10px;margin-top:8px;color:var(--muted);}
+  .conn-status.ok{color:var(--accent);}
+  .conn-status.err{color:var(--accent2);}
 
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 0 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-  }
-  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--accent); }
-  .logo span { color: var(--text); }
-  .counter-badge { background: var(--border); border: 1px solid var(--muted); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--muted); }
-  .counter-badge strong { color: var(--accent); }
+  /* Mode toggle */
+  .mode-toggle{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .mode-btn{flex:1;padding:8px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:transparent;color:var(--muted);border:none;cursor:pointer;transition:all 0.2s;}
+  .mode-btn.active{background:var(--border);color:var(--accent);}
 
-  .api-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-  .section-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
-  .api-input-row { display: flex; gap: 8px; }
-  input[type="password"], input[type="text"] {
-    flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 12px; color: var(--text); font-family: 'Space Mono', monospace;
-    font-size: 12px; outline: none; transition: border-color 0.2s;
-  }
-  input:focus { border-color: var(--accent); }
-  .save-btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 10px 14px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-  .api-status { font-size: 10px; margin-top: 6px; color: var(--muted); }
-  .api-status.ok { color: var(--accent); }
-  .api-hint { font-size: 10px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
-  .api-hint a { color: var(--accent); text-decoration: none; }
+  /* Camera */
+  .camera-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+  .cam-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .camera-preview{position:relative;background:#000;min-height:200px;display:flex;align-items:center;justify-content:center;}
+  #videoEl{width:100%;max-height:260px;object-fit:cover;display:block;}
+  #canvasEl{display:none;}
+  .cam-placeholder{text-align:center;padding:40px 20px;color:var(--muted);display:flex;flex-direction:column;align-items:center;}
+  .cam-placeholder .icon{font-size:40px;margin-bottom:10px;}
+  .cam-placeholder p{font-size:12px;line-height:1.6;}
+  .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanAnim 2s linear infinite;opacity:0;}
+  .scan-line.active{opacity:1;}
+  @keyframes scanAnim{0%{top:0}100%{top:100%}}
 
-  .mode-toggle { display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
-  .mode-btn { flex: 1; padding: 8px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: transparent; color: var(--muted); border: none; cursor: pointer; transition: all 0.2s; }
-  .mode-btn.active { background: var(--border); color: var(--accent); }
+  .controls{padding:12px 16px;display:flex;gap:8px;}
+  .btn{flex:1;padding:12px;border:none;border-radius:8px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:hover:not(:disabled){opacity:0.85;transform:translateY(-1px);}
+  .btn-secondary{background:var(--border);color:var(--text);border:1px solid var(--muted);}
+  .btn-secondary:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+  .btn-danger{background:transparent;color:var(--accent2);border:1px solid var(--accent2);}
+  .btn-danger:hover:not(:disabled){background:var(--accent2);color:#000;}
 
-  .camera-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
-  .camera-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  .camera-preview { position: relative; background: #000; min-height: 200px; display: flex; align-items: center; justify-content: center; }
-  #videoEl { width: 100%; max-height: 260px; object-fit: cover; display: block; }
-  #canvasEl { display: none; }
-  .camera-placeholder { text-align: center; padding: 40px 20px; color: var(--muted); display: flex; flex-direction: column; align-items: center; }
-  .camera-placeholder .icon { font-size: 40px; margin-bottom: 10px; }
-  .camera-placeholder p { font-size: 12px; line-height: 1.6; }
-  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: scanAnim 2s linear infinite; opacity: 0; }
-  .scan-line.active { opacity: 1; }
-  @keyframes scanAnim { 0%{top:0} 100%{top:100%} }
+  .auto-row{display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px;font-size:11px;color:var(--muted);}
+  .toggle{width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background 0.2s;}
+  .toggle.on{background:var(--accent);}
+  .toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.2s;}
+  .toggle.on::after{transform:translateX(16px);}
 
-  .controls { padding: 12px 16px; display: flex; gap: 8px; }
-  .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
-  .btn-secondary { background: var(--border); color: var(--text); border: 1px solid var(--muted); }
-  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-  .btn-danger { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
-  .btn-danger:hover:not(:disabled) { background: var(--accent2); color: #000; }
+  /* Upload */
+  .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.2s;margin-bottom:12px;}
+  .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);color:var(--accent);background:rgba(0,255,136,0.03);}
+  .upload-zone .icon{font-size:32px;margin-bottom:8px;}
+  #fileInput{display:none;}
 
-  .auto-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--panel); border-radius: 8px; margin: 0 16px 12px; font-size: 11px; color: var(--muted); }
-  .toggle { width: 36px; height: 20px; background: var(--border); border-radius: 10px; position: relative; cursor: pointer; transition: background 0.2s; }
-  .toggle.on { background: var(--accent); }
-  .toggle::after { content: ''; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; }
-  .toggle.on::after { transform: translateX(16px); }
+  /* Answer */
+  .answer-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;min-height:140px;display:flex;flex-direction:column;}
+  .answer-display{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+  .big-answer{font-family:'Syne',sans-serif;font-weight:800;font-size:80px;line-height:1;color:var(--accent);animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);text-shadow:0 0 40px rgba(0,255,136,0.6);}
+  @keyframes popIn{0%{transform:scale(0.4);opacity:0}100%{transform:scale(1);opacity:1}}
+  .answer-text{font-size:11px;color:var(--muted);text-align:center;max-width:300px;line-height:1.7;}
+  .answer-text strong{color:var(--text);}
+  .status-idle{color:var(--muted);font-size:12px;text-align:center;}
+  .status-scanning{color:var(--accent);font-size:12px;text-align:center;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .status-error{color:var(--accent2);font-size:11px;text-align:center;padding:0 10px;line-height:1.6;}
 
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 30px 20px; text-align: center; color: var(--muted); font-size: 12px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px; }
-  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.03); }
-  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
-  #fileInput { display: none; }
+  /* Log */
+  .log-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+  .log-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .log-list{max-height:300px;overflow-y:auto;}
+  .log-item{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;font-size:11px;line-height:1.5;}
+  .log-item:last-child{border-bottom:none;}
+  .log-num{min-width:22px;height:22px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);flex-shrink:0;margin-top:1px;}
+  .log-q{flex:1;color:var(--muted);}
+  .log-q strong{color:var(--text);display:block;margin-bottom:3px;}
+  .log-ans{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);flex-shrink:0;}
+  .log-empty{padding:30px;text-align:center;color:var(--muted);font-size:11px;}
 
-  .answer-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; min-height: 140px; display: flex; flex-direction: column; }
-  .answer-display { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-  .big-answer { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 80px; line-height: 1; color: var(--accent); animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); text-shadow: 0 0 40px rgba(0,255,136,0.6); }
-  @keyframes popIn { 0%{transform:scale(0.4);opacity:0} 100%{transform:scale(1);opacity:1} }
-  .answer-text { font-size: 11px; color: var(--muted); text-align: center; max-width: 300px; line-height: 1.7; }
-  .answer-text strong { color: var(--text); }
-  .status-idle { color: var(--muted); font-size: 12px; text-align: center; }
-  .status-scanning { color: var(--accent); font-size: 12px; text-align: center; animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .status-error { color: var(--accent2); font-size: 11px; text-align: center; padding: 0 10px; line-height: 1.6; }
+  .progress-label{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
+  .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:16px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#00ccff);border-radius:2px;transition:width 0.4s ease;}
 
-  .log-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
-  .log-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  .log-list { max-height: 300px; overflow-y: auto; }
-  .log-item { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; font-size: 11px; line-height: 1.5; }
-  .log-item:last-child { border-bottom: none; }
-  .log-num { min-width: 22px; height: 22px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
-  .log-q { flex: 1; color: var(--muted); }
-  .log-q strong { color: var(--text); display: block; margin-bottom: 3px; }
-  .log-ans { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--accent); flex-shrink: 0; }
+  .export-section{display:flex;gap:8px;margin-bottom:24px;}
 
-  .log-empty { padding: 30px; text-align: center; color: var(--muted); font-size: 11px; }
-
-  .progress-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
-  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #00ccff); border-radius: 2px; transition: width 0.4s ease; }
-
-  .export-section { display: flex; gap: 8px; margin-bottom: 24px; }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .interval-row { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; font-size: 11px; color: var(--muted); }
-  .interval-row select { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 11px; padding: 4px 8px; outline: none; }
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 </style>
 </head>
 <body>
@@ -149,32 +134,91 @@
 
   <div class="header">
     <div class="logo">MCQ<span>Scanner</span></div>
-    <div class="counter-badge">Q: <strong id="qCount">0</strong> / 100</div>
+    <div class="badge">Q: <strong id="qCount">0</strong> / 100</div>
   </div>
 
-  <!-- API Key -->
-  <div class="api-section">
-    <div class="section-label">Google Gemini API Key</div>
-    <div class="api-input-row">
-      <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
-      <button class="save-btn" onclick="saveApiKey()">SAVE</button>
+  <!-- SETUP GUIDE (collapsible) -->
+  <div class="setup-card">
+    <div class="setup-header" onclick="toggleSetup()">
+      <span class="section-label">🛠 LAPTOP SETUP (one time)</span>
+      <span class="chevron" id="chevron">▼</span>
     </div>
-    <div class="api-status" id="apiStatus">Enter your Gemini API key</div>
-    <div class="api-hint">
-      Free key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a><br>
-      Works with Gemini Pro free tier (no credit card needed)
+    <div class="setup-body" id="setupBody">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Download & Install Ollama</strong>
+          Go to <span class="highlight">ollama.com</span> → Download for Windows → Install it (takes ~2 min)
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Download the Vision AI Model</strong>
+          Open <span class="highlight">Command Prompt</span> and run:
+          <div class="code-block">ollama pull llava:7b<button class="copy-btn" onclick="copyText('ollama pull llava:7b',this)">copy</button></div>
+          <span style="font-size:10px;color:var(--muted)">Downloads ~4GB once. 7B model works great on 16GB RAM.</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Allow phone to connect (run this once)</strong>
+          In Command Prompt, run:
+          <div class="code-block">set OLLAMA_ORIGINS=* && set OLLAMA_HOST=0.0.0.0 && ollama serve<button class="copy-btn" onclick="copyText('set OLLAMA_ORIGINS=* && set OLLAMA_HOST=0.0.0.0 && ollama serve',this)">copy</button></div>
+          Keep this window open while using the app.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Find your laptop's local IP address</strong>
+          Open Command Prompt and run:
+          <div class="code-block">ipconfig<button class="copy-btn" onclick="copyText('ipconfig',this)">copy</button></div>
+          Look for <span class="highlight">IPv4 Address</span> under Wi-Fi — e.g. <span class="highlight">192.168.1.5</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Phone & laptop on same Wi-Fi?</strong>
+          Make sure your phone is connected to the <span class="highlight">same Wi-Fi network</span> as your laptop.
+        </div>
+      </div>
+
+      <div class="note">
+        ⚡ Run Step 3 command every time you restart your laptop before using the app.
+      </div>
+      <div class="note-blue">
+        💡 Want a one-click shortcut? Save the Step 3 command as a <strong>.bat file</strong> on your desktop — double-click it to start the AI server anytime.
+      </div>
     </div>
   </div>
 
-  <!-- Mode toggle -->
+  <!-- CONNECTION -->
+  <div class="conn-section">
+    <div class="section-label">LAPTOP CONNECTION</div>
+    <div class="conn-row">
+      <input type="text" id="hostInput" placeholder="192.168.1.5" value="">
+      <button class="test-btn" onclick="testConnection()">TEST</button>
+    </div>
+    <div class="conn-status" id="connStatus">Enter your laptop's IP address from Step 4 above</div>
+  </div>
+
+  <!-- MODE -->
   <div class="mode-toggle">
     <button class="mode-btn active" id="modeCamera" onclick="setMode('camera')">📷 CAMERA</button>
     <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">📁 UPLOAD</button>
   </div>
 
-  <!-- Camera -->
+  <!-- CAMERA -->
   <div id="cameraSec" class="camera-section">
-    <div class="camera-header">
+    <div class="cam-header">
       <span class="section-label" style="margin:0">LIVE CAMERA</span>
       <span id="camStatus" style="font-size:10px;color:var(--muted)">OFF</span>
     </div>
@@ -182,7 +226,7 @@
       <video id="videoEl" autoplay playsinline muted></video>
       <canvas id="canvasEl"></canvas>
       <div class="scan-line" id="scanLine"></div>
-      <div class="camera-placeholder" id="camPlaceholder">
+      <div class="cam-placeholder" id="camPlaceholder">
         <div class="icon">📱</div>
         <p>Point camera at laptop screen<br>showing the MCQ question</p>
       </div>
@@ -199,7 +243,6 @@
           <option value="5000">5s</option>
           <option value="10000" selected>10s</option>
           <option value="15000">15s</option>
-          <option value="20000">20s</option>
           <option value="30000">30s</option>
         </select>
         <div class="toggle" id="autoToggle" onclick="toggleAuto()"></div>
@@ -207,7 +250,7 @@
     </div>
   </div>
 
-  <!-- Upload -->
+  <!-- UPLOAD -->
   <div id="uploadSec" style="display:none;margin-bottom:16px;">
     <div class="upload-zone" id="uploadZone"
       onclick="document.getElementById('fileInput').click()"
@@ -215,30 +258,26 @@
       ondragleave="this.classList.remove('dragover')"
       ondrop="handleDrop(event)">
       <div class="icon">🖼️</div>
-      <p>Tap to upload screenshot of MCQ<br><small>PNG, JPG, WEBP supported</small></p>
+      <p>Tap to upload screenshot of MCQ<br><small>PNG, JPG, WEBP</small></p>
     </div>
     <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
     <img id="previewImg" style="width:100%;border-radius:8px;display:none;margin-bottom:8px;" alt="preview">
     <button class="btn btn-primary" style="width:100%" onclick="scanUploadedImage()" id="scanUploadBtn" disabled>🔍 SCAN THIS IMAGE</button>
   </div>
 
-  <!-- Progress -->
-  <div class="progress-label">
-    <span>PROGRESS</span><span id="progressPct">0%</span>
-  </div>
-  <div class="progress-bar">
-    <div class="progress-fill" id="progressFill" style="width:0%"></div>
-  </div>
+  <!-- PROGRESS -->
+  <div class="progress-label"><span>PROGRESS</span><span id="progressPct">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 
-  <!-- Answer -->
+  <!-- ANSWER -->
   <div class="answer-section">
     <div class="section-label">ANSWER</div>
     <div class="answer-display" id="answerDisplay">
-      <div class="status-idle">Scan a question to see the answer</div>
+      <div class="status-idle">Connect to laptop then scan a question</div>
     </div>
   </div>
 
-  <!-- Log -->
+  <!-- LOG -->
   <div class="log-section">
     <div class="log-header">
       <span class="section-label" style="margin:0">QUESTION LOG</span>
@@ -249,7 +288,7 @@
     </div>
   </div>
 
-  <!-- Export -->
+  <!-- EXPORT -->
   <div class="export-section">
     <button class="btn btn-secondary" style="flex:2" onclick="exportToExcel()" id="exportBtn" disabled>📊 EXPORT TO EXCEL</button>
     <button class="btn btn-danger" onclick="clearAll()" id="clearBtn" disabled>🗑 CLEAR</button>
@@ -260,78 +299,102 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── STATE ──────────────────────────────────────────────
-let apiKey = localStorage.getItem('mcq_gemini_key') || '';
-let questions = JSON.parse(localStorage.getItem('mcq_questions_g') || '[]');
-let stream = null;
-let autoInterval = null;
-let autoOn = false;
-let currentMode = 'camera';
-let uploadedImageData = null;
-let uploadedMime = 'image/jpeg';
-let isScanning = false;
+let ollamaHost = localStorage.getItem('mcq_host') || '';
+let questions  = JSON.parse(localStorage.getItem('mcq_questions_local') || '[]');
+let stream = null, autoInterval = null, autoOn = false;
+let currentMode = 'camera', uploadedB64 = null, isScanning = false;
 
 // ── INIT ───────────────────────────────────────────────
-if (apiKey) {
-  document.getElementById('apiKeyInput').value = apiKey;
-  document.getElementById('apiStatus').textContent = '✓ Key loaded';
-  document.getElementById('apiStatus').className = 'api-status ok';
-}
-renderLog();
-updateProgress();
+if (ollamaHost) document.getElementById('hostInput').value = ollamaHost;
+renderLog(); updateProgress();
 if (questions.length > 0) {
   document.getElementById('exportBtn').disabled = false;
   document.getElementById('clearBtn').disabled = false;
-  const last = questions[questions.length - 1];
+  const last = questions[questions.length-1];
   document.getElementById('answerDisplay').innerHTML = `
     <div class="big-answer">${last.answer}</div>
     <div class="answer-text"><strong>Loaded from storage</strong><br>${questions.length} question(s) saved</div>`;
 }
 
-// ── API KEY ────────────────────────────────────────────
-function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if (!val || val.length < 10) {
-    document.getElementById('apiStatus').textContent = '✗ Key looks invalid';
-    document.getElementById('apiStatus').className = 'api-status';
-    return;
+// ── SETUP TOGGLE ───────────────────────────────────────
+function toggleSetup() {
+  const body = document.getElementById('setupBody');
+  const chev = document.getElementById('chevron');
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓';
+    setTimeout(() => btn.textContent = 'copy', 1500);
+  });
+}
+
+// ── CONNECTION ─────────────────────────────────────────
+async function testConnection() {
+  const ip = document.getElementById('hostInput').value.trim().replace(/\/+$/,'');
+  if (!ip) { setConnStatus('Enter an IP address first', 'err'); return; }
+  ollamaHost = ip;
+  localStorage.setItem('mcq_host', ollamaHost);
+  setConnStatus('Testing connection...', '');
+
+  try {
+    const res = await fetch(`http://${ollamaHost}:11434/api/tags`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const models = (data.models || []).map(m => m.name);
+    const hasVision = models.some(m => m.includes('llava') || m.includes('vision') || m.includes('bakllava'));
+    if (hasVision) {
+      setConnStatus('✓ Connected! Vision model ready: ' + models.find(m=>m.includes('llava')||m.includes('vision')), 'ok');
+    } else if (models.length > 0) {
+      setConnStatus('⚠ Connected but no vision model found. Run: ollama pull llava:7b', 'err');
+    } else {
+      setConnStatus('⚠ Ollama running but no models installed. Run: ollama pull llava:7b', 'err');
+    }
+  } catch(e) {
+    if (e.name === 'TimeoutError') {
+      setConnStatus('✗ Timeout — check IP or run the serve command on laptop', 'err');
+    } else {
+      setConnStatus('✗ Cannot reach laptop — check IP, same Wi-Fi, and serve command', 'err');
+    }
   }
-  apiKey = val;
-  localStorage.setItem('mcq_gemini_key', apiKey);
-  document.getElementById('apiStatus').textContent = '✓ Key saved!';
-  document.getElementById('apiStatus').className = 'api-status ok';
+}
+
+function setConnStatus(msg, cls) {
+  const el = document.getElementById('connStatus');
+  el.textContent = msg;
+  el.className = 'conn-status' + (cls ? ' '+cls : '');
 }
 
 // ── MODE ───────────────────────────────────────────────
 function setMode(mode) {
   currentMode = mode;
-  document.getElementById('cameraSec').style.display = mode === 'camera' ? 'block' : 'none';
-  document.getElementById('uploadSec').style.display = mode === 'upload' ? 'block' : 'none';
-  document.getElementById('modeCamera').className = 'mode-btn' + (mode === 'camera' ? ' active' : '');
-  document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
-  if (mode === 'upload' && stream) stopCamera();
+  document.getElementById('cameraSec').style.display = mode==='camera'?'block':'none';
+  document.getElementById('uploadSec').style.display  = mode==='upload'?'block':'none';
+  document.getElementById('modeCamera').className = 'mode-btn'+(mode==='camera'?' active':'');
+  document.getElementById('modeUpload').className = 'mode-btn'+(mode==='upload'?' active':'');
+  if (mode==='upload' && stream) stopCamera();
 }
 
 // ── CAMERA ─────────────────────────────────────────────
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
     });
-    const video = document.getElementById('videoEl');
-    video.srcObject = stream;
+    document.getElementById('videoEl').srcObject = stream;
     document.getElementById('camPlaceholder').style.display = 'none';
     document.getElementById('camStatus').textContent = '● LIVE';
     document.getElementById('camStatus').style.color = 'var(--accent)';
     document.getElementById('startCamBtn').disabled = true;
     document.getElementById('scanBtn').disabled = false;
     document.getElementById('stopCamBtn').disabled = false;
-  } catch(e) {
-    showError('Camera error: ' + e.message + '. Use Upload mode instead.');
-  }
+  } catch(e) { showError('Camera error: '+e.message+'. Use Upload mode.'); }
 }
 
 function stopCamera() {
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
   if (autoOn) toggleAuto();
   document.getElementById('videoEl').srcObject = null;
   document.getElementById('camPlaceholder').style.display = 'flex';
@@ -343,130 +406,114 @@ function stopCamera() {
 }
 
 function captureFrame() {
-  const video = document.getElementById('videoEl');
-  const canvas = document.getElementById('canvasEl');
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  const v = document.getElementById('videoEl');
+  const c = document.getElementById('canvasEl');
+  c.width = v.videoWidth||640; c.height = v.videoHeight||480;
+  c.getContext('2d').drawImage(v,0,0);
+  return c.toDataURL('image/jpeg',0.85).split(',')[1];
 }
 
 async function captureAndScan() {
   if (!stream) { showError('Start camera first'); return; }
   if (isScanning) return;
-  await analyzeImage(captureFrame(), 'image/jpeg');
+  await analyzeImage(captureFrame());
 }
 
 // ── UPLOAD ─────────────────────────────────────────────
-function handleFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+function handleFileSelect(e) { if(e.target.files[0]) processFile(e.target.files[0]); }
 function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.remove('dragover');
-  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+  e.preventDefault(); document.getElementById('uploadZone').classList.remove('dragover');
+  if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
 }
 function processFile(file) {
-  uploadedMime = file.type || 'image/jpeg';
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const result = e.target.result;
-    document.getElementById('previewImg').src = result;
+  const r = new FileReader();
+  r.onload = e => {
+    const res = e.target.result;
+    document.getElementById('previewImg').src = res;
     document.getElementById('previewImg').style.display = 'block';
-    uploadedImageData = result.split(',')[1];
+    uploadedB64 = res.split(',')[1];
     document.getElementById('scanUploadBtn').disabled = false;
-    document.getElementById('uploadZone').querySelector('p').innerHTML = '✓ ' + file.name + '<br><small>Ready to scan</small>';
+    document.getElementById('uploadZone').querySelector('p').innerHTML = '✓ '+file.name+'<br><small>Ready to scan</small>';
   };
-  reader.readAsDataURL(file);
+  r.readAsDataURL(file);
 }
 async function scanUploadedImage() {
-  if (!uploadedImageData) { showError('Upload an image first'); return; }
+  if (!uploadedB64) { showError('Upload an image first'); return; }
   if (isScanning) return;
-  await analyzeImage(uploadedImageData, uploadedMime);
+  await analyzeImage(uploadedB64);
 }
 
-// ── GEMINI API ─────────────────────────────────────────
-async function analyzeImage(base64Data, mimeType) {
-  if (!apiKey) { showError('Enter your Gemini API key first'); return; }
-  if (questions.length >= 100) { showError('Reached 100 question limit! Export and clear to continue.'); return; }
+// ── OLLAMA AI ──────────────────────────────────────────
+async function analyzeImage(base64Data) {
+  if (!ollamaHost) { showError('Enter laptop IP address and tap TEST first'); return; }
+  if (questions.length >= 100) { showError('100 question limit reached! Export then clear.'); return; }
 
   isScanning = true;
   setScanning(true);
 
-  const prompt = `Look at this image carefully. It shows a multiple choice question (MCQ).
+  const prompt = `This image shows a multiple choice question (MCQ) on a screen.
 
-Extract:
-1. The full question text
-2. All answer options with their labels (A, B, C, D — or 1,2,3,4 mapped to A,B,C,D)
-3. The CORRECT answer letter
-4. A brief one-line explanation why it's correct
+Extract the question and all answer options, then identify the CORRECT answer.
 
-Respond ONLY with this exact JSON (no markdown, no extra text):
+Reply ONLY with this JSON (no extra text, no markdown):
 {
   "question": "full question text",
   "options": {
-    "A": "option A text",
-    "B": "option B text",
-    "C": "option C text",
-    "D": "option D text"
+    "A": "option text",
+    "B": "option text",
+    "C": "option text",
+    "D": "option text"
   },
   "answer": "A",
-  "explanation": "one line reason"
+  "explanation": "one line reason why this is correct"
 }
 
-If there is no MCQ visible, respond: {"error": "No MCQ found"}`;
+If no MCQ is visible reply: {"error": "No MCQ found"}`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Detect which vision model is available
+    const tagsRes = await fetch(`http://${ollamaHost}:11434/api/tags`, {signal:AbortSignal.timeout(4000)});
+    const tagsData = await tagsRes.json();
+    const models = (tagsData.models||[]).map(m=>m.name);
+    const visionModel = models.find(m=>m.includes('llava')||m.includes('vision')||m.includes('bakllava')) || 'llava:7b';
 
-    const body = {
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mimeType, data: base64Data } },
-          { text: prompt }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 800,
-        responseMimeType: "text/plain"
-      }
-    };
-
-    const resp = await fetch(url, {
+    const res = await fetch(`http://${ollamaHost}:11434/api/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers: {'Content-Type':'application/json'},
+      signal: AbortSignal.timeout(60000),
+      body: JSON.stringify({
+        model: visionModel,
+        prompt: prompt,
+        images: [base64Data],
+        stream: false,
+        options: { temperature: 0.1, num_predict: 400 }
+      })
     });
 
-    if (!resp.ok) {
-      const err = await resp.json();
-      const msg = err?.error?.message || 'API error ' + resp.status;
-      if (resp.status === 400) throw new Error('Bad request — check your API key');
-      if (resp.status === 403) throw new Error('Invalid API key or API not enabled');
-      if (resp.status === 429) throw new Error('Rate limit hit — wait a moment and retry');
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error('Ollama error: HTTP ' + res.status);
+    const data = await res.json();
+    const raw = (data.response || '').trim();
+    if (!raw) throw new Error('Empty response from model');
 
-    const data = await resp.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!rawText) throw new Error('Empty response from Gemini');
-
-    // Parse JSON
     let result;
     try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      result = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+      const match = raw.match(/\{[\s\S]*\}/);
+      result = JSON.parse(match ? match[0] : raw);
     } catch(e) {
-      throw new Error('Could not parse AI response: ' + rawText.substring(0, 80));
+      // Try to extract answer letter directly as fallback
+      const letter = raw.match(/\b([ABCD])\b/)?.[1];
+      if (letter) {
+        result = { question: 'Question detected', options:{}, answer: letter, explanation: raw.substring(0,100) };
+      } else {
+        throw new Error('Could not parse response');
+      }
     }
 
-    if (result.error) {
-      showError(result.error);
-    } else {
-      showAnswer(result);
-    }
+    result.error ? showError(result.error) : showAnswer(result);
 
   } catch(e) {
-    showError(e.message);
+    if (e.name === 'TimeoutError') showError('Timeout — model is still loading, wait 30s and retry');
+    else showError(e.message);
   } finally {
     isScanning = false;
     setScanning(false);
@@ -475,33 +522,28 @@ If there is no MCQ visible, respond: {"error": "No MCQ found"}`;
 
 // ── UI ─────────────────────────────────────────────────
 function setScanning(on) {
-  document.getElementById('scanLine').className = 'scan-line' + (on ? ' active' : '');
+  document.getElementById('scanLine').className = 'scan-line'+(on?' active':'');
   document.getElementById('scanBtn').disabled = on || !stream;
-  document.getElementById('scanUploadBtn').disabled = on || !uploadedImageData;
-  if (on) {
-    document.getElementById('answerDisplay').innerHTML =
-      `<div class="status-scanning">⚡ GEMINI IS THINKING...</div>`;
-  }
+  document.getElementById('scanUploadBtn').disabled = on || !uploadedB64;
+  if (on) document.getElementById('answerDisplay').innerHTML =
+    `<div class="status-scanning">🧠 LOCAL AI THINKING...</div>`;
 }
 
 function showAnswer(result) {
   const entry = {
-    num: questions.length + 1,
-    question: result.question || '',
-    options: result.options || {},
-    answer: result.answer || '?',
-    explanation: result.explanation || '',
+    num: questions.length+1,
+    question: result.question||'',
+    options: result.options||{},
+    answer: result.answer||'?',
+    explanation: result.explanation||'',
     timestamp: new Date().toLocaleString()
   };
   questions.push(entry);
-  localStorage.setItem('mcq_questions_g', JSON.stringify(questions));
+  localStorage.setItem('mcq_questions_local', JSON.stringify(questions));
 
-  const qShort = entry.question.length > 80
-    ? entry.question.substring(0, 80) + '...'
-    : entry.question;
-
+  const qShort = entry.question.length>80 ? entry.question.substring(0,80)+'...' : entry.question;
   const optHtml = Object.entries(entry.options)
-    .map(([k, v]) => `<span style="color:${k===entry.answer?'var(--accent)':'var(--muted)'}"><b>${k}.</b> ${v}</span>`)
+    .map(([k,v])=>`<span style="color:${k===entry.answer?'var(--accent)':'var(--muted)'};"><b>${k}.</b> ${v}</span>`)
     .join('  ');
 
   document.getElementById('answerDisplay').innerHTML = `
@@ -512,38 +554,32 @@ function showAnswer(result) {
       <span style="color:var(--accent);font-size:10px">↳ ${entry.explanation}</span>
     </div>`;
 
-  updateProgress();
-  renderLog();
-  spawnConfetti();
+  updateProgress(); renderLog(); spawnConfetti();
   document.getElementById('exportBtn').disabled = false;
   document.getElementById('clearBtn').disabled = false;
 }
 
 function showError(msg) {
-  document.getElementById('answerDisplay').innerHTML =
-    `<div class="status-error">⚠️ ${msg}</div>`;
+  document.getElementById('answerDisplay').innerHTML = `<div class="status-error">⚠️ ${msg}</div>`;
 }
 
 function updateProgress() {
-  const pct = Math.round((questions.length / 100) * 100);
+  const pct = Math.round((questions.length/100)*100);
   document.getElementById('qCount').textContent = questions.length;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
 }
 
 function renderLog() {
   const list = document.getElementById('logList');
-  document.getElementById('logCount').textContent = questions.length + ' question' + (questions.length !== 1 ? 's' : '');
-  if (questions.length === 0) {
-    list.innerHTML = '<div class="log-empty">No questions scanned yet</div>';
-    return;
-  }
-  list.innerHTML = [...questions].reverse().map(q => `
+  document.getElementById('logCount').textContent = questions.length+' question'+(questions.length!==1?'s':'');
+  if (!questions.length) { list.innerHTML='<div class="log-empty">No questions scanned yet</div>'; return; }
+  list.innerHTML = [...questions].reverse().map(q=>`
     <div class="log-item">
       <div class="log-num">${q.num}</div>
       <div class="log-q">
         <strong>${(q.question||'MCQ #'+q.num).substring(0,65)}${(q.question||'').length>65?'...':''}</strong>
-        ${Object.entries(q.options||{}).map(([k,v])=>`<span style="color:${k===q.answer?'var(--accent)':'var(--muted)'};font-size:10px">${k}: ${v.substring(0,20)}${v.length>20?'...':''} </span>`).join('')}
+        ${Object.entries(q.options||{}).map(([k,v])=>`<span style="color:${k===q.answer?'var(--accent)':'var(--muted)'};font-size:10px">${k}: ${v.substring(0,18)}${v.length>18?'...':''} </span>`).join('')}
       </div>
       <div class="log-ans">${q.answer}</div>
     </div>`).join('');
@@ -552,109 +588,67 @@ function renderLog() {
 // ── AUTO SCAN ──────────────────────────────────────────
 function toggleAuto() {
   autoOn = !autoOn;
-  document.getElementById('autoToggle').className = 'toggle' + (autoOn ? ' on' : '');
+  document.getElementById('autoToggle').className = 'toggle'+(autoOn?' on':'');
   clearInterval(autoInterval);
   if (autoOn) {
     const ms = parseInt(document.getElementById('intervalSel').value);
-    if (!stream) {
-      startCamera().then(() => { autoInterval = setInterval(captureAndScan, ms); });
-    } else {
-      autoInterval = setInterval(captureAndScan, ms);
-    }
+    if (!stream) startCamera().then(()=>{ autoInterval=setInterval(captureAndScan,ms); });
+    else autoInterval = setInterval(captureAndScan, ms);
   }
 }
 
-// ── EXCEL EXPORT ───────────────────────────────────────
+// ── EXCEL ──────────────────────────────────────────────
 function exportToExcel() {
-  if (questions.length === 0) { showError('No questions to export'); return; }
-
+  if (!questions.length) { showError('No questions to export'); return; }
   const wb = XLSX.utils.book_new();
-
-  // Sheet 1: All questions
-  const rows = [['#', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Explanation', 'Scanned At']];
-  questions.forEach(q => {
-    rows.push([
-      q.num,
-      q.question || '',
-      q.options?.A || '',
-      q.options?.B || '',
-      q.options?.C || '',
-      q.options?.D || '',
-      q.answer || '',
-      q.explanation || '',
-      q.timestamp || ''
-    ]);
-  });
-
+  const rows = [['#','Question','Option A','Option B','Option C','Option D','Correct Answer','Explanation','Scanned At']];
+  questions.forEach(q => rows.push([
+    q.num, q.question||'',
+    q.options?.A||'', q.options?.B||'', q.options?.C||'', q.options?.D||'',
+    q.answer||'', q.explanation||'', q.timestamp||''
+  ]));
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{wch:4},{wch:55},{wch:28},{wch:28},{wch:28},{wch:28},{wch:8},{wch:38},{wch:18}];
-
-  // Bold header
-  for (let c = 0; c < 9; c++) {
-    const ref = XLSX.utils.encode_cell({r:0,c});
-    if (ws[ref]) ws[ref].s = { font:{bold:true,name:'Arial',sz:11}, fill:{fgColor:{rgb:'1a2e1a'}}, alignment:{horizontal:'center'} };
-  }
-
-  // Highlight correct answer column
-  for (let r = 1; r <= questions.length; r++) {
-    const ref = XLSX.utils.encode_cell({r, c:6});
-    if (ws[ref]) ws[ref].s = { font:{bold:true,color:{rgb:'00cc66'}}, alignment:{horizontal:'center'} };
-  }
-
   XLSX.utils.book_append_sheet(wb, ws, 'MCQ Results');
 
-  // Sheet 2: Summary
-  const answerCounts = {A:0,B:0,C:0,D:0};
-  questions.forEach(q => { if (answerCounts[q.answer] !== undefined) answerCounts[q.answer]++; });
+  const ac = {A:0,B:0,C:0,D:0};
+  questions.forEach(q=>{ if(ac[q.answer]!==undefined) ac[q.answer]++; });
   const sw = XLSX.utils.aoa_to_sheet([
-    ['MCQ SCAN SUMMARY', ''],
-    ['', ''],
-    ['Total Questions Scanned', questions.length],
-    ['Export Date', new Date().toLocaleString()],
-    ['', ''],
-    ['ANSWER DISTRIBUTION', ''],
-    ['Answer A', answerCounts.A],
-    ['Answer B', answerCounts.B],
-    ['Answer C', answerCounts.C],
-    ['Answer D', answerCounts.D],
-    ['', ''],
-    ['Most Common Answer', Object.entries(answerCounts).sort((a,b)=>b[1]-a[1])[0][0]],
+    ['MCQ SCAN SUMMARY',''],['',''],
+    ['Total Questions',questions.length],
+    ['Export Date',new Date().toLocaleString()],['',''],
+    ['Answer A',ac.A],['Answer B',ac.B],['Answer C',ac.C],['Answer D',ac.D],['',''],
+    ['Most Common',Object.entries(ac).sort((a,b)=>b[1]-a[1])[0][0]]
   ]);
-  sw['!cols'] = [{wch:25},{wch:20}];
+  sw['!cols'] = [{wch:22},{wch:20}];
   XLSX.utils.book_append_sheet(wb, sw, 'Summary');
-
-  const date = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `MCQ_Results_${date}.xlsx`);
+  XLSX.writeFile(wb, `MCQ_Results_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ── CLEAR ──────────────────────────────────────────────
 function clearAll() {
   if (!confirm(`Clear all ${questions.length} questions?`)) return;
-  questions = [];
-  uploadedImageData = null;
-  localStorage.removeItem('mcq_questions_g');
+  questions = []; uploadedB64 = null;
+  localStorage.removeItem('mcq_questions_local');
   document.getElementById('previewImg').style.display = 'none';
   document.getElementById('scanUploadBtn').disabled = true;
-  renderLog();
-  updateProgress();
-  document.getElementById('answerDisplay').innerHTML = '<div class="status-idle">Scan a question to see the answer</div>';
+  renderLog(); updateProgress();
+  document.getElementById('answerDisplay').innerHTML = '<div class="status-idle">Connect to laptop then scan a question</div>';
   document.getElementById('exportBtn').disabled = true;
   document.getElementById('clearBtn').disabled = true;
 }
 
 // ── CONFETTI ───────────────────────────────────────────
 function spawnConfetti() {
-  const colors = ['#00ff88','#ff6b35','#00ccff','#ffdd00','#ff88cc'];
-  for (let i = 0; i < 18; i++) {
-    const d = document.createElement('div');
-    d.style.cssText = `position:fixed;z-index:999;pointer-events:none;width:7px;height:7px;border-radius:50%;background:${colors[i%colors.length]};left:${25+Math.random()*50}vw;top:45vh;`;
-    document.body.appendChild(d);
-    const tx = (Math.random()-0.5)*220, ty = -(60+Math.random()*160);
-    d.animate([
-      {transform:'translate(0,0) scale(1)',opacity:1},
-      {transform:`translate(${tx}px,${ty}px) scale(0)`,opacity:0}
-    ],{duration:600+Math.random()*500,easing:'ease-out',fill:'forwards'}).onfinish=()=>d.remove();
-  }
+  ['#00ff88','#ff6b35','#00ccff','#ffdd00','#ff88cc'].forEach((c,i)=>{
+    for(let j=0;j<4;j++){
+      const d=document.createElement('div');
+      d.style.cssText=`position:fixed;z-index:999;pointer-events:none;width:7px;height:7px;border-radius:50%;background:${c};left:${25+Math.random()*50}vw;top:45vh;`;
+      document.body.appendChild(d);
+      d.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${(Math.random()-.5)*220}px,${-(60+Math.random()*160)}px) scale(0)`,opacity:0}],
+        {duration:600+Math.random()*500,easing:'ease-out',fill:'forwards'}).onfinish=()=>d.remove();
+    }
+  });
 }
 </script>
 </body>
