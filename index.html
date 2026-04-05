@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MCQ Scanner AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #00ff88;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #5a5a7a;
+    --correct: #00ff88;
+    --panel: #0d0d15;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+  .counter-badge {
+    background: var(--border);
+    border: 1px solid var(--muted);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .counter-badge strong { color: var(--accent); }
+
+  /* API Key section */
+  .api-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .api-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  input[type="password"], input[type="text"] {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  .save-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+  .api-status {
+    font-size: 10px;
+    margin-top: 6px;
+    color: var(--muted);
+  }
+  .api-status.ok { color: var(--correct); }
+
+  /* Camera section */
+  .camera-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .camera-preview {
+    position: relative;
+    background: #000;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #videoEl {
+    width: 100%;
+    max-height: 260px;
+    object-fit: cover;
+    display: block;
+  }
+  #canvasEl { display: none; }
+  .camera-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .camera-placeholder .icon { font-size: 40px; margin-bottom: 10px; }
+  .camera-placeholder p { font-size: 12px; line-height: 1.6; }
+
+  /* Scan overlay */
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanAnim 2s linear infinite;
+    opacity: 0;
+  }
+  .scan-line.active { opacity: 1; }
+  @keyframes scanAnim {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  /* Controls */
+  .controls {
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--border);
+    color: var(--text);
+    border: 1px solid var(--muted);
+  }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-danger {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+  .btn-danger:hover:not(:disabled) { background: var(--accent2); color: #000; }
+
+  /* Answer display */
+  .answer-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+  }
+  .answer-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .big-answer {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 72px;
+    line-height: 1;
+    color: var(--accent);
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-shadow: 0 0 30px rgba(0,255,136,0.5);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .answer-text {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.6;
+  }
+  .answer-text strong { color: var(--text); }
+  .status-idle { color: var(--muted); font-size: 12px; text-align: center; }
+  .status-scanning {
+    color: var(--accent);
+    font-size: 12px;
+    text-align: center;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-error { color: var(--accent2); font-size: 11px; text-align: center; }
+
+  /* Questions log */
+  .log-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-list {
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .log-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 11px;
+    line-height: 1.5;
+    transition: background 0.15s;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-item:hover { background: rgba(255,255,255,0.02); }
+  .log-num {
+    min-width: 22px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--muted);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .log-q { flex: 1; color: var(--muted); }
+  .log-q strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .log-ans {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .log-empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  /* Export section */
+  .export-section {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn.active {
+    background: var(--border);
+    color: var(--accent);
+  }
+
+  /* Upload section */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,136,0.03);
+  }
+  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+  #fileInput { display: none; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #00ccff);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Auto-scan toggle */
+  .auto-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(16px); }
+
+  /* Confetti dot for correct answer */
+  .confetti { position: fixed; pointer-events: none; z-index: 999; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">MCQ<span>Scanner</span></div>
+    <div class="counter-badge">Q: <strong id="qCount">0</strong> / 100</div>
+  </div>
+
+  <!-- API Key -->
+  <div class="api-section">
+    <div class="section-label">Anthropic API Key</div>
+    <div class="api-input-row">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+      <button class="save-btn" onclick="saveApiKey()">SAVE</button>
+    </div>
+    <div class="api-status" id="apiStatus">Enter your key to enable AI scanning</div>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeCamera" onclick="setMode('camera')">📷 CAMERA</button>
+    <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">📁 UPLOAD</button>
+  </div>
+
+  <!-- Camera section -->
+  <div id="cameraSec" class="camera-section">
+    <div class="camera-header">
+      <span class="section-label" style="margin:0">LIVE CAMERA</span>
+      <span id="camStatus" style="font-size:10px; color:var(--muted)">OFF</span>
+    </div>
+    <div class="camera-preview">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <canvas id="canvasEl"></canvas>
+      <div class="scan-line" id="scanLine"></div>
+      <div class="camera-placeholder" id="camPlaceholder">
+        <div class="icon">📱</div>
+        <p>Point your phone camera at the laptop screen showing the MCQ question</p>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-secondary" onclick="startCamera()" id="startCamBtn">▶ START</button>
+      <button class="btn btn-primary" onclick="captureAndScan()" id="scanBtn" disabled>🔍 SCAN</button>
+      <button class="btn btn-secondary" onclick="stopCamera()" id="stopCamBtn" disabled>■ STOP</button>
+    </div>
+    <!-- Auto-scan toggle -->
+    <div style="padding: 0 16px 12px;">
+      <div class="auto-row">
+        <span>⚡ Auto-scan every 10s</span>
+        <div class="toggle" id="autoToggle" onclick="toggleAuto()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload section -->
+  <div id="uploadSec" style="display:none; margin-bottom:16px;">
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+      <div class="icon">🖼️</div>
+      <p>Tap to upload screenshot of MCQ<br><small>PNG, JPG, WEBP supported</small></p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+    <div style="padding: 0 0 8px;">
+      <img id="previewImg" style="width:100%;border-radius:8px;display:none;margin-bottom:8px;" alt="preview">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="scanUploadedImage()" id="scanUploadBtn" disabled>🔍 SCAN THIS IMAGE</button>
+  </div>
+
+  <!-- Progress -->
+  <div>
+    <div class="progress-label">
+      <span>PROGRESS</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Answer display -->
+  <div class="answer-section">
+    <div class="section-label">ANSWER</div>
+    <div class="answer-display" id="answerDisplay">
+      <div class="status-idle">Scan a question to see the answer</div>
+    </div>
+  </div>
+
+  <!-- Questions log -->
+  <div class="log-section">
+    <div class="log-header">
+      <span class="section-label" style="margin:0">QUESTION LOG</span>
+      <span style="font-size:10px; color:var(--muted)" id="logCount">0 questions</span>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">No questions scanned yet</div>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="export-section">
+    <button class="btn btn-secondary" style="flex:2" onclick="exportToExcel()" id="exportBtn" disabled>
+      📊 EXPORT TO EXCEL
+    </button>
+    <button class="btn btn-danger" onclick="clearAll()" id="clearBtn" disabled>
+      🗑 CLEAR
+    </button>
+  </div>
+
+</div>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// =========================================================
+// STATE
+// =========================================================
+let apiKey = localStorage.getItem('mcq_api_key') || '';
+let questions = JSON.parse(localStorage.getItem('mcq_questions') || '[]');
+let stream = null;
+let autoInterval = null;
+let autoOn = false;
+let currentMode = 'camera';
+let uploadedImageData = null;
+
+// =========================================================
+// INIT
+// =========================================================
+if (apiKey) {
+  document.getElementById('apiKeyInput').value = apiKey;
+  document.getElementById('apiStatus').textContent = '✓ Key loaded from storage';
+  document.getElementById('apiStatus').className = 'api-status ok';
+}
+renderLog();
+updateProgress();
+
+// =========================================================
+// API KEY
+// =========================================================
+function saveApiKey() {
+  apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey.startsWith('sk-')) {
+    document.getElementById('apiStatus').textContent = '✗ Invalid key format (should start with sk-)';
+    document.getElementById('apiStatus').className = 'api-status';
+    return;
+  }
+  localStorage.setItem('mcq_api_key', apiKey);
+  document.getElementById('apiStatus').textContent = '✓ Key saved!';
+  document.getElementById('apiStatus').className = 'api-status ok';
+}
+
+// =========================================================
+// MODE SWITCH
+// =========================================================
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('cameraSec').style.display = mode === 'camera' ? 'block' : 'none';
+  document.getElementById('uploadSec').style.display = mode === 'upload' ? 'block' : 'none';
+  document.getElementById('modeCamera').className = 'mode-btn' + (mode === 'camera' ? ' active' : '');
+  document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
+  if (mode === 'upload' && stream) stopCamera();
+}
+
+// =========================================================
+// CAMERA
+// =========================================================
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('videoEl');
+    video.srcObject = stream;
+    document.getElementById('camPlaceholder').style.display = 'none';
+    document.getElementById('camStatus').textContent = '● LIVE';
+    document.getElementById('camStatus').style.color = 'var(--accent)';
+    document.getElementById('startCamBtn').disabled = true;
+    document.getElementById('scanBtn').disabled = false;
+    document.getElementById('stopCamBtn').disabled = false;
+  } catch(e) {
+    showError('Camera error: ' + e.message + '. Try using Upload mode instead.');
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (autoOn) toggleAuto();
+  document.getElementById('videoEl').srcObject = null;
+  document.getElementById('camPlaceholder').style.display = 'flex';
+  document.getElementById('camStatus').textContent = 'OFF';
+  document.getElementById('camStatus').style.color = 'var(--muted)';
+  document.getElementById('startCamBtn').disabled = false;
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('stopCamBtn').disabled = true;
+}
+
+function captureFrame() {
+  const video = document.getElementById('videoEl');
+  const canvas = document.getElementById('canvasEl');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+}
+
+async function captureAndScan() {
+  if (!stream) { showError('Start camera first'); return; }
+  const imageData = captureFrame();
+  await analyzeImage(imageData);
+}
+
+// =========================================================
+// FILE UPLOAD
+// =========================================================
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target.result;
+    document.getElementById('previewImg').src = result;
+    document.getElementById('previewImg').style.display = 'block';
+    uploadedImageData = result.split(',')[1];
+    document.getElementById('scanUploadBtn').disabled = false;
+    document.getElementById('uploadZone').querySelector('p').textContent = '✓ ' + file.name + ' — ready to scan';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function scanUploadedImage() {
+  if (!uploadedImageData) { showError('Upload an image first'); return; }
+  await analyzeImage(uploadedImageData);
+}
+
+// =========================================================
+// AI ANALYSIS
+// =========================================================
+async function analyzeImage(base64Image) {
+  if (!apiKey) { showError('Enter your Anthropic API key first'); return; }
+  if (questions.length >= 100) { showError('Reached 100 question limit!'); return; }
+
+  setScanning(true);
+
+  const prompt = `You are analyzing a screenshot of a multiple choice question (MCQ) on a laptop screen.
+
+Your job:
+1. Extract the full question text
+2. Extract all answer options (A, B, C, D or 1, 2, 3, 4)
+3. Determine the CORRECT answer
+4. Return ONLY a JSON object, no other text:
+
+{
+  "question": "Full question text here",
+  "options": {
+    "A": "Option A text",
+    "B": "Option B text", 
+    "C": "Option C text",
+    "D": "Option D text"
+  },
+  "answer": "A",
+  "explanation": "Brief reason why this is correct"
+}
+
+If no MCQ is visible, return: {"error": "No MCQ found in image"}
+If options use numbers (1,2,3,4), map them to A,B,C,D respectively.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'API error ' + response.status);
+    }
+
+    const data = await response.json();
+    const rawText = data.content[0].text.trim();
+
+    // Parse JSON from response
+    let result;
+    try {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      result = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+    } catch(e) {
+      throw new Error('Could not parse AI response');
+    }
+
+    if (result.error) {
+      showError(result.error);
+    } else {
+      showAnswer(result);
+    }
+  } catch(e) {
+    showError('Error: ' + e.message);
+  } finally {
+    setScanning(false);
+  }
+}
+
+// =========================================================
+// UI UPDATES
+// =========================================================
+function setScanning(on) {
+  document.getElementById('scanLine').className = 'scan-line' + (on ? ' active' : '');
+  document.getElementById('scanBtn').disabled = on;
+  document.getElementById('scanUploadBtn').disabled = on;
+
+  if (on) {
+    document.getElementById('answerDisplay').innerHTML = `<div class="status-scanning">⚡ SCANNING WITH AI...</div>`;
+  }
+}
+
+function showAnswer(result) {
+  // Add to log
+  const entry = {
+    num: questions.length + 1,
+    question: result.question,
+    options: result.options,
+    answer: result.answer,
+    explanation: result.explanation,
+    timestamp: new Date().toLocaleTimeString()
+  };
+  questions.push(entry);
+  localStorage.setItem('mcq_questions', JSON.stringify(questions));
+
+  // Big answer display
+  const opts = result.options ? Object.entries(result.options).map(([k,v]) => `<strong>${k}.</strong> ${v}`).join(' &nbsp;|&nbsp; ') : '';
+  document.getElementById('answerDisplay').innerHTML = `
+    <div class="big-answer">${result.answer}</div>
+    <div class="answer-text">
+      <strong>${result.question ? result.question.substring(0,80) + (result.question.length > 80 ? '...' : '') : 'Question detected'}</strong>
+      <br>${result.explanation || ''}
+    </div>`;
+
+  updateProgress();
+  renderLog();
+  spawnConfetti();
+  document.getElementById('exportBtn').disabled = false;
+  document.getElementById('clearBtn').disabled = false;
+}
+
+function showError(msg) {
+  document.getElementById('answerDisplay').innerHTML = `<div class="status-error">⚠ ${msg}</div>`;
+}
+
+function updateProgress() {
+  const pct = Math.round((questions.length / 100) * 100);
+  document.getElementById('qCount').textContent = questions.length;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function renderLog() {
+  const list = document.getElementById('logList');
+  document.getElementById('logCount').textContent = questions.length + ' question' + (questions.length !== 1 ? 's' : '');
+
+  if (questions.length === 0) {
+    list.innerHTML = '<div class="log-empty">No questions scanned yet</div>';
+    return;
+  }
+
+  // Show latest first
+  list.innerHTML = [...questions].reverse().map(q => `
+    <div class="log-item">
+      <div class="log-num">${q.num}</div>
+      <div class="log-q">
+        <strong>${q.question ? q.question.substring(0,60) + (q.question.length > 60 ? '...' : '') : 'MCQ #' + q.num}</strong>
+        ${q.options ? Object.entries(q.options).map(([k,v]) => `<span style="color:var(--muted);font-size:10px">${k}: ${v.substring(0,25)}${v.length>25?'...':''}</span>`).join(' ') : ''}
+      </div>
+      <div class="log-ans">${q.answer}</div>
+    </div>
+  `).join('');
+}
+
+// =========================================================
+// AUTO SCAN
+// =========================================================
+function toggleAuto() {
+  autoOn = !autoOn;
+  document.getElementById('autoToggle').className = 'toggle' + (autoOn ? ' on' : '');
+  if (autoOn) {
+    if (!stream) { startCamera().then(() => { autoInterval = setInterval(captureAndScan, 10000); }); }
+    else { autoInterval = setInterval(captureAndScan, 10000); }
+  } else {
+    clearInterval(autoInterval);
+  }
+}
+
+// =========================================================
+// EXCEL EXPORT
+// =========================================================
+function exportToExcel() {
+  if (questions.length === 0) { showError('No questions to export yet'); return; }
+
+  const ws_data = [
+    ['#', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Explanation', 'Time']
+  ];
+
+  questions.forEach(q => {
+    ws_data.push([
+      q.num,
+      q.question || '',
+      q.options?.A || '',
+      q.options?.B || '',
+      q.options?.C || '',
+      q.options?.D || '',
+      q.answer || '',
+      q.explanation || '',
+      q.timestamp || ''
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:4}, {wch:60}, {wch:30}, {wch:30}, {wch:30}, {wch:30}, {wch:10}, {wch:40}, {wch:10}
+  ];
+
+  // Style header row (basic)
+  const headerRange = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+    if (cell) {
+      cell.s = {
+        font: { bold: true, name: 'Arial', sz: 11, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1a1a2e' } },
+        alignment: { horizontal: 'center', wrapText: true }
+      };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'MCQ Results');
+
+  // Summary sheet
+  const summary_data = [
+    ['MCQ SCAN SUMMARY'],
+    [''],
+    ['Total Questions', questions.length],
+    ['Export Date', new Date().toLocaleString()],
+    [''],
+    ['Answer Distribution'],
+    ['A', questions.filter(q=>q.answer==='A').length],
+    ['B', questions.filter(q=>q.answer==='B').length],
+    ['C', questions.filter(q=>q.answer==='C').length],
+    ['D', questions.filter(q=>q.answer==='D').length],
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summary_data);
+  ws2['!cols'] = [{wch:20}, {wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+  XLSX.writeFile(wb, `MCQ_Results_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// =========================================================
+// CLEAR
+// =========================================================
+function clearAll() {
+  if (!confirm('Clear all ' + questions.length + ' questions? This cannot be undone.')) return;
+  questions = [];
+  localStorage.removeItem('mcq_questions');
+  renderLog();
+  updateProgress();
+  document.getElementById('answerDisplay').innerHTML = '<div class="status-idle">Scan a question to see the answer</div>';
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('clearBtn').disabled = true;
+}
+
+// =========================================================
+// CONFETTI
+// =========================================================
+function spawnConfetti() {
+  const colors = ['#00ff88', '#ff6b35', '#00ccff', '#ffdd00'];
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = `
+      position:fixed; z-index:999; pointer-events:none;
+      width:6px; height:6px; border-radius:50%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:${30+Math.random()*40}vw; top:40vh;
+      animation: confettiFly ${0.6+Math.random()*0.8}s ease-out forwards;
+    `;
+    document.body.appendChild(dot);
+    const tx = (Math.random()-0.5) * 200;
+    const ty = -(50 + Math.random()*150);
+    dot.animate([
+      {transform:'translate(0,0) scale(1)', opacity:1},
+      {transform:`translate(${tx}px,${ty}px) scale(0)`, opacity:0}
+    ], {duration: 700+Math.random()*500, easing:'ease-out', fill:'forwards'}).onfinish = () => dot.remove();
+  }
+}
+
+// =========================================================
+// RE-RENDER on load if questions exist
+// =========================================================
+if (questions.length > 0) {
+  document.getElementById('exportBtn').disabled = false;
+  document.getElementById('clearBtn').disabled = false;
+  const last = questions[questions.length-1];
+  document.getElementById('answerDisplay').innerHTML = `
+    <div class="big-answer">${last.answer}</div>
+    <div class="answer-text"><strong>Last answer loaded from storage</strong><br>${questions.length} question(s) in log</div>`;
+}
+</script>
+</body>
+</html>
